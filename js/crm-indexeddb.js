@@ -1,27 +1,41 @@
 let db;
 
-// Abrir base de datos IndexedDB y crear object store si es necesario
-// --- ELIMINADO para que alumnos implementen ---
-// const request = indexedDB.open("CRM_Database", 1);
+let borrarBd = true;
 
-// request.onerror = function(event) {
-//     console.error("Error abriendo IndexedDB", event);
-// };
+if(borrarBd && db) {
 
-// request.onsuccess = function(event) {
-//     db = event.target.result;
-//     fetchClients(); // Cargar clientes almacenados
-// };
+    const tx = db.transaction("clients", "readwrite");
+    const store = tx.objectStore("clients");
 
-// request.onupgradeneeded = function(event) {
-//     db = event.target.result;
-//     if(!db.objectStoreNames.contains('clients')) {
-//         const objectStore = db.createObjectStore('clients', { keyPath: 'id', autoIncrement: true });
-//         objectStore.createIndex('name', 'name', { unique: false });
-//         objectStore.createIndex('email', 'email', { unique: true });
-//         objectStore.createIndex('phone', 'phone', { unique: false });
-//     }
-// };
+    store.clear(); // ← esto borra TODOS los registros dentro de clients
+
+    tx.oncomplete = () => console.log("todos los datos borrados");
+    tx.onerror = () => console.log("error al borrar datos");
+}
+
+
+const request = indexedDB.open("CRM_Database", 1);
+
+request.onerror = function(event) {
+console.error("Error abriendo IndexedDB", event);
+};
+
+request.onsuccess = function(event) {
+    db = event.target.result;
+    fetchClients(); // Cargar clientes almacenados
+};
+
+request.onupgradeneeded = function(event) {
+    db = event.target.result;
+    if(!db.objectStoreNames.contains('clients')) {
+        const objectStore = db.createObjectStore('clients', { keyPath: 'id', autoIncrement: true });
+        objectStore.createIndex('name', 'name', { unique: false });
+        objectStore.createIndex('email', 'email', { unique: true });
+        objectStore.createIndex('phone', 'phone', { unique: false });
+    }
+};
+
+
 
 // --- VALIDACIONES ---
 // TODO: Implementad validaciones usando expresiones regulares y eventos 'onblur'
@@ -50,6 +64,17 @@ form.addEventListener('submit', e => {
 // TODO: Implementar función para mostrar clientes guardados en IndexedDB
 function fetchClients() {
     // Código eliminado para que alumnos implementen mecanismo de lectura
+    const tx = db.transaction("clients", "readwrite");
+    const store = tx.objectStore("clients");
+    store.add({ name:"Daniel", email:"correo@gmail.es", phone:"122342423" });
+
+    const req = store.get(1);
+
+    req.onsuccess = () => {
+    console.log(req.result);
+    }
+
+    tx.oncomplete = () => console.log("añadido");
 }
 
 // --- EDITAR CLIENTE ---
