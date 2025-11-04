@@ -1,27 +1,31 @@
 let db;
 
-let borrarBd = true;
+let borrarBd = false;
 
-if(borrarBd && db) {
+function borrarBaseDatos(){
+    if(borrarBd && db) {
 
-    const tx = db.transaction("clients", "readwrite");
-    const store = tx.objectStore("clients");
+        const tx = db.transaction("clients", "readwrite");
+        const store = tx.objectStore("clients");
 
-    store.clear(); // ← esto borra TODOS los registros dentro de clients
+        store.clear();
+        let deleteRequest = indexedDB.deleteDatabase("CRM_Database")
+        tx.oncomplete = () => console.log("todos los datos borrados");
+        tx.onerror = () => console.log("error al borrar datos");
 
-    tx.oncomplete = () => console.log("todos los datos borrados");
-    tx.onerror = () => console.log("error al borrar datos");
+    }
 }
 
 
 const request = indexedDB.open("CRM_Database", 1);
 
 request.onerror = function(event) {
-console.error("Error abriendo IndexedDB", event);
+    console.error("Error abriendo IndexedDB", event);
 };
 
 request.onsuccess = function(event) {
     db = event.target.result;
+    borrarBaseDatos();
     fetchClients(); // Cargar clientes almacenados
 };
 
@@ -57,33 +61,80 @@ inputs.forEach(input => {
 // TODO: Implementar la función que capture los datos y los agregue a IndexedDB
 form.addEventListener('submit', e => {
     e.preventDefault();
-    // Código para agregar cliente eliminado para valoración
+    
+    if(!db) {
+        console.error("La base de datos no está lista");
+        return;
+    }
+    
+    let nombre = form.querySelector("#name").value; 
+    let email = form.querySelector("#email").value;
+    let telef = form.querySelector("#phone").value;
+
+    console.log("Añadiendo cliente:", nombre, email, telef);
+
+    const tx = db.transaction("clients", "readwrite");
+    const store = tx.objectStore("clients");
+    store.add({ name: nombre, email: email, phone: telef});
+    
+    tx.oncomplete = () => {
+        console.log("Cliente añadido correctamente");
+        fetchClients();
+    };
+    
+    tx.onerror = () => console.error("Error al añadir cliente");
 });
 
 // --- LISTADO DINÁMICO ---
 // TODO: Implementar función para mostrar clientes guardados en IndexedDB
 function fetchClients() {
-    // Código eliminado para que alumnos implementen mecanismo de lectura
-    const tx = db.transaction("clients", "readwrite");
+    const tx = db.transaction("clients", "readonly");
     const store = tx.objectStore("clients");
-    store.add({ name:"Daniel", email:"correo@gmail.es", phone:"122342423" });
-
-    const req = store.get(1);
-
-    req.onsuccess = () => {
-    console.log(req.result);
-    }
-
-    tx.oncomplete = () => console.log("añadido");
+    const request = store.getAll();
+    
+    request.onsuccess = () => {
+        const clientes = request.result;
+        const lista = document.querySelector("#client-list");
+        lista.innerHTML = "";
+        
+        clientes.forEach(cliente => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <div><strong>ID: ${cliente.id}</strong> | Nombre: ${cliente.name} — Email: ${cliente.email} — Teléfono: ${cliente.phone}</div>
+                <div>
+                    <button class="editar-btn">Editar</button>
+                    <button class="eliminar-btn">Eliminar</button>
+                </div>
+            `;
+            lista.appendChild(li);
+            
+            
+            const editarBtn = li.querySelector(".editar-btn");
+            editarBtn.addEventListener("click", () => {
+                window.editClient(cliente.id);
+            });
+            
+            const eliminarBtn = li.querySelector(".eliminar-btn");
+            eliminarBtn.addEventListener("click", () => {
+                window.deleteClient(cliente.id);
+            });
+        });
+    };
 }
 
 // --- EDITAR CLIENTE ---
 window.editClient = function(id) {
-    // Código eliminado para implementación del alumno
+    const tx = db.transaction("clients", "readwrite");
+    const store = tx.objectStore("clients");
+    store.put({ id: id, name: "Nombre", email: "example@correo.es", phone: "000000000"}); 
+    fetchClients();
 };
 
 // --- ELIMINAR CLIENTE ---
 window.deleteClient = function(id) {
-    // Código eliminado para implementación del alumno
+    const tx = db.transaction("clients", "readwrite");
+    const store = tx.objectStore("clients");
+    store.delete(id);
+    fetchClients();
 };
 
