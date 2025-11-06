@@ -1,22 +1,43 @@
 let db;
 
 let borrarBd = false;
+let borrarDatos = false;
 
 function borrarBaseDatos(){
-    if(borrarBd && db) {
+    
+    if(borrarBd){
+        let deleteRequest = indexedDB.deleteDatabase("CRM_Database");
+        deleteRequest.onsuccess = function() {
+            console.log("Base de datos borrada correctamente");
+        };
+        deleteRequest.onerror = function(event) {
+            console.error("Error al borrar la base de datos");
+        }
+        borrarBd = false;     
+    }
 
+    if(borrarDatos && db) {
         const tx = db.transaction("clients", "readwrite");
         const store = tx.objectStore("clients");
 
         store.clear();
-        let deleteRequest = indexedDB.deleteDatabase("CRM_Database")
-        tx.oncomplete = () => console.log("todos los datos borrados");
+        
+        tx.oncomplete = () => {
+            const lista = document.querySelector("#client-list");
+            lista.innerHTML = "";
+
+            console.log("todos los datos borrados");
+            borrarDatos = false;
+        };
         tx.onerror = () => console.log("error al borrar datos");
 
+        
+        borrarDatos = false;
     }
+
 }
 
-
+borrarBaseDatos(); 
 const request = indexedDB.open("CRM_Database", 1);
 
 request.onerror = function(event) {
@@ -25,7 +46,7 @@ request.onerror = function(event) {
 
 request.onsuccess = function(event) {
     db = event.target.result;
-    borrarBaseDatos();
+    //borrarBaseDatos();
     fetchClients(); // Cargar clientes almacenados
 };
 
@@ -54,7 +75,10 @@ const inputs = form.querySelectorAll('input');
 
 inputs.forEach(input => {
     // Quitar manejo de eventos 'blur' para validación (alumnos deben hacerlo)
-    // input.addEventListener('blur', e => { ... });
+    input.addEventListener('blur', e => { 
+        const value = e.target.value.trim();
+        const isValid = value.length > 0; // Validación simple: campo no vacío
+     });
 });
 
 // --- AGREGAR CLIENTE ---
@@ -86,7 +110,6 @@ form.addEventListener('submit', e => {
 });
 
 // --- LISTADO DINÁMICO ---
-// TODO: Implementar función para mostrar clientes guardados en IndexedDB
 function fetchClients() {
     const tx = db.transaction("clients", "readonly");
     const store = tx.objectStore("clients");
