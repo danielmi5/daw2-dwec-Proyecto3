@@ -3,6 +3,9 @@ let db;
 let borrarBd = false;
 let borrarDatos = false;
 
+/**
+ * Borra la base de datos completa o solo los datos según las valores de borrarBd y borrarDatos.
+ */
 function borrarBaseDatos(){
     
     if(borrarBd){
@@ -17,19 +20,19 @@ function borrarBaseDatos(){
     }
 
     if(borrarDatos && db) {
-        const tx = db.transaction("clients", "readwrite");
-        const store = tx.objectStore("clients");
+        const transaccion = db.transaction("clients", "readwrite");
+        const storeClientes = transaccion.objectStore("clients");
 
-        store.clear();
+        storeClientes.clear();
         
-        tx.oncomplete = () => {
+        transaccion.oncomplete = () => {
             const lista = document.querySelector("#client-list");
             lista.innerHTML = "";
 
             console.log("todos los datos borrados");
             borrarDatos = false;
         };
-        tx.onerror = () => console.log("error al borrar datos");
+        transaccion.onerror = () => console.log("error al borrar datos");
 
         
         borrarDatos = false;
@@ -98,10 +101,10 @@ form.addEventListener('submit', (e) => {
     let telef = inputTelefono.value.trim(); 
 
     try {
-        const tx = db.transaction("clients", "readwrite");
-        const store = tx.objectStore("clients");
-        store.add({ name: nombre, email: email, phone: telef});
-        tx.oncomplete = () => {
+        const transaccion = db.transaction("clients", "readwrite");
+        const storeClientes = transaccion.objectStore("clients");
+        storeClientes.add({ name: nombre, email: email, phone: telef});
+        transaccion.oncomplete = () => {
             console.log("Cliente añadido correctamente");
             fetchClients();
             form.reset();
@@ -110,7 +113,7 @@ form.addEventListener('submit', (e) => {
             });
             activarDesactivarBtn();
         };
-        tx.onerror = (event) => {
+        transaccion.onerror = (event) => {
             console.error("Error al intentar añadir el cliente:", event);
         };
     } catch (error) {
@@ -119,10 +122,14 @@ form.addEventListener('submit', (e) => {
 });
 
 // --- LISTADO DINÁMICO ---
+/**
+ * Coge todos los clientes de la base de datos y los muestra en la lista HTML.
+ * Y crea los botones de editar y eliminar para cada cliente.
+ */
 function fetchClients() {
-    const tx = db.transaction("clients", "readonly");
-    const store = tx.objectStore("clients");
-    const request = store.getAll();
+    const transaccion = db.transaction("clients", "readonly");
+    const storeClientes = transaccion.objectStore("clients");
+    const request = storeClientes.getAll();
     
     request.onsuccess = () => {
         const clientes = request.result;
@@ -155,74 +162,109 @@ function fetchClients() {
 }
 
 // --- EDITAR CLIENTE ---
+/**
+ * Muestra el formulario para editar un cliente existente.
+ */
 window.editClient = function(cliente) {
     mostrarForm(cliente);
     
 };
 
 // --- ELIMINAR CLIENTE ---
+/**
+ * Elimina un cliente de la base de datos por su ID.
+ */
 window.deleteClient = function(id) {
-    const tx = db.transaction("clients", "readwrite");
-    const store = tx.objectStore("clients");
-    store.delete(id);
+    const transaccion = db.transaction("clients", "readwrite");
+    const storeClientes = transaccion.objectStore("clients");
+    storeClientes.delete(id);
     
-    tx.oncomplete = () => {
+    transaccion.oncomplete = () => {
         console.log("Cliente eliminado correctamente");
         fetchClients();
     };
     
-    tx.onerror = () => {
+    transaccion.onerror = () => {
         console.error("Error al eliminar cliente");
     };
 };
 
 
+// --- FUNCIONES DE VALIDACIÓN ---
 
+/**
+ * Valida que el nombre contenga solo letras y espacios.
+ */
 function comprobarNombre(nombre){
     const regex = /^[a-zA-Z\s]+$/;
     return regex.test(nombre);
 }
 
+/**
+ * Valida que el email tenga formato correcto.
+ */
 function comprobarEmail(email){
     const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     return regex.test(email);
 }
 
-function comprobarEmailYaExiste(email){
+/**
+ * Comprueba de forma asíncrona si un email ya existe en la base de datos.
+ * @param {string} email - Email a verificar
+ * @param {number|null} excluirClienteId - ID del cliente a excluir de la búsqueda (útil al editar)
+ * @returns {Promise<boolean>} - true si el email ya existe (en otro cliente), false si está disponible
+ */
+function comprobarEmailYaExiste(email, excluirClienteId = null){
 
     return new Promise((resolve, reject) => {
-        const tx = db.transaction("clients", "readonly");
-        const store = tx.objectStore("clients");
-        const request = store.getAll();
+        const transaccion = db.transaction("clients", "readonly");
+        const storeClientes = transaccion.objectStore("clients");
+        const request = storeClientes.getAll();
 
         request.onsuccess = () => {
-            resolve(request.result.some(cliente => cliente.email === email)) 
+            resolve(request.result.some(cliente => 
+                cliente.email === email && cliente.id !== excluirClienteId
+            )) 
         }
 
         request.onerror = () => reject(request.error)
     })
 }
 
-
+/**
+ * Valida que el teléfono tenga exactamente 9 dígitos.
+ */
 function comprobarTelefono(telef){
     const regex = /^[0-9]{9}$/;
     return regex.test(telef)
 }
 
-function comprobarTelefonoYaExiste(telef){
+/**
+ * Comprueba de forma asíncrona si un teléfono ya existe en la base de datos.
+ * @param {string} telef - Teléfono a verificar
+ * @param {number|null} excluirClienteId - ID del cliente a excluir de la búsqueda (útil al editar)
+ * @returns {Promise<boolean>} - true si el teléfono ya existe (en otro cliente), false si está disponible
+ */
+function comprobarTelefonoYaExiste(telef, excluirClienteId = null){
     return new Promise((resolve, reject) => {
-        const tx = db.transaction("clients", "readonly");
-        const store = tx.objectStore("clients");
-        const request = store.getAll();
+        const transaccion = db.transaction("clients", "readonly");
+        const storeClientes = transaccion.objectStore("clients");
+        const request = storeClientes.getAll();
 
         request.onsuccess = () => {
-            resolve(request.result.some(cliente => cliente.phone === telef)) 
+            resolve(request.result.some(cliente => 
+                cliente.phone === telef && cliente.id !== excluirClienteId
+            )) 
         }
 
         request.onerror = () => reject(request.error)
     })
 }
 
+/**
+ * Muestra un mensaje de error debajo del input y aplica estilos visuales de error.
+ * Si ya existe un error, actualiza el mensaje en lugar de crear uno nuevo.
+ */
 function generarErrorInput(input, mensaje){
     if (input.classList.contains("input-mal")) {
         const mensajeAnterior = input.parentNode.querySelector(".mensaje-error");
@@ -245,6 +287,9 @@ function generarErrorInput(input, mensaje){
     input.insertAdjacentElement('afterend', p);
 }
 
+/**
+ * Marca el input como válido, elimina mensajes de error y aplica estilos visuales de éxito.
+ */
 function generarBienInput(input){
     input.classList.remove("input-mal");
     input.classList.add("input-bien");
@@ -252,89 +297,111 @@ function generarBienInput(input){
     if (p != null) p.remove();
 }
 
-async function inputBien(input){
+/**
+ * Valida un input de forma completa: formato y unicidad en BD.
+ * Detecta automáticamente el tipo de campo según su ID y aplica las validaciones correspondientes.
+ * @param {HTMLInputElement} inputElement - Elemento input a validar
+ * @param {number|null} clienteId - ID del cliente actual (para excluirlo al editar)
+ * @returns {Promise<boolean>} - true si el input es válido, false si hay errores
+ */
+async function validarInput(inputElement, clienteId = null) {
     let bien = true;
-    let valor;
+    const valor = inputElement.value.trim();
+    const inputId = inputElement.id;
     
-    switch (input) {
-        case inputNombre:
-            valor = inputNombre.value.trim();
-
-            if(!comprobarNombre(valor)){
-                const msj = "Nombre no válido";
-                generarErrorInput(inputNombre, msj);
-                console.error(msj);
-                bien = false;
-            }
-            break;
-        case inputEmail:
-            valor = inputEmail.value.trim();
-
-            if(!comprobarEmail(valor)){
-                const msj = "Email no válido";
-                generarErrorInput(inputEmail, msj);
-                console.error(msj);
-                bien = false;
-            } else {
-                try {
-                    const existe = await comprobarEmailYaExiste(valor);
-                    if (existe) {
-                        generarErrorInput(inputEmail, "Ya existe un cliente con ese email");
-                        bien = false;
-                    }
-                } catch (err) {
-                    console.error('Error comprobando email:', err);
-                    generarErrorInput(inputEmail, "No se pudo verificar el email");
+    // Validación de nombre
+    if (inputId === 'name' || inputId === 'edit-name') {
+        if (!comprobarNombre(valor)) {
+            const msj = "Nombre no válido";
+            generarErrorInput(inputElement, msj);
+            console.error(msj);
+            bien = false;
+        }
+    }
+    
+    // Validación de email
+    if (inputId === 'email' || inputId === 'edit-email') {
+        if (!comprobarEmail(valor)) {
+            const msj = "Email no válido";
+            generarErrorInput(inputElement, msj);
+            console.error(msj);
+            bien = false;
+        } else {
+            try {
+                const existe = await comprobarEmailYaExiste(valor, clienteId);
+                if (existe) {
+                    generarErrorInput(inputElement, "Ya existe un cliente con ese email");
                     bien = false;
                 }
-            }
-            break;            
-        case inputTelefono:
-            valor = inputTelefono.value.trim();
-
-            if(!comprobarTelefono(valor)){
-                const msj = "El número de télefono no es válido";
-                generarErrorInput(inputTelefono, msj);
-                console.error(msj);
+            } catch (err) {
+                console.error('Error comprobando email:', err);
+                generarErrorInput(inputElement, "No se pudo verificar el email");
                 bien = false;
-            } else {
-                try {
-                    const existe = await comprobarTelefonoYaExiste(valor);
-                    if (existe) {
-                        generarErrorInput(inputTelefono, "Ya existe un cliente con ese teléfono");
-                        bien = false;
-                    }
-                } catch (err) {
-                    console.error('Error comprobando teléfono:', err);
-                    generarErrorInput(inputTelefono, "No se pudo verificar el teléfono");
+            }
+        }
+    }
+    
+    // Validación de teléfono
+    if (inputId === 'phone' || inputId === 'edit-phone') {
+        if (!comprobarTelefono(valor)) {
+            const msj = "El número de teléfono no es válido";
+            generarErrorInput(inputElement, msj);
+            console.error(msj);
+            bien = false;
+        } else {
+            try {
+                const existe = await comprobarTelefonoYaExiste(valor, clienteId);
+                if (existe) {
+                    generarErrorInput(inputElement, "Ya existe un cliente con ese teléfono");
                     bien = false;
                 }
+            } catch (err) {
+                console.error('Error comprobando teléfono:', err);
+                generarErrorInput(inputElement, "No se pudo verificar el teléfono");
+                bien = false;
             }
-            break;
+        }
     }
 
-    if(bien) {
-        input.classList.remove("input-mal");
-        generarBienInput(input);
+    if (bien) {
+        inputElement.classList.remove("input-mal");
+        generarBienInput(inputElement);
     } else {
-        input.classList.remove("input-bien");
+        inputElement.classList.remove("input-bien");
     }
     return bien;
 }
 
+/**
+ * Funciona para la compatibilidad con la validación del formulario principal
+ */
+async function inputBien(input){
+    return await validarInput(input);
+}
 
-function activarDesactivarBtn(){
+/**
+ * Habilita o deshabilita un botón según el estado de validación de los inputs.
+ * El botón se habilita solo si todos los inputs tienen la clase 'input-bien' y no están vacíos.
+ * @param {HTMLButtonElement} boton - Botón a activar/desactivar (por defecto addBtn)
+ * @param {NodeList} inputsArray - Lista de inputs a verificar (por defecto inputs del form principal)
+ */
+function activarDesactivarBtn(boton = addBtn, inputsArray = inputs){
     let todosBien = true;
-    inputs.forEach(input => {
+    inputsArray.forEach(input => {
         if (!input.classList.contains("input-bien") || input.value.trim() === "") {
             todosBien = false;
         }
     });
 
-    addBtn.disabled = (todosBien) ? false : true;
+    boton.disabled = !todosBien;
 }
 
 // ---FORMULARIO EDITAR CLIENTE---
+/**
+ * Crea y muestra un formulario para editar los datos de un cliente.
+ * Valida automáticamente los campos al cargar y configura las validaciones en tiempo real.
+ * @param {Object} cliente - Objeto cliente con propiedades id, name, email y phone
+ */
 function mostrarForm(cliente) {
     const ventana = document.createElement('div');
     ventana.className = 'edit-ventana';
@@ -359,7 +426,7 @@ function mostrarForm(cliente) {
             </div>
             <div class="edit-buttons">
                 <button id="edit-cancel-btn" type="button">Cancelar</button>
-                <button id="edit-submit-btn" type="submit">Guardar Cambios</button>
+                <button id="edit-submit-btn" type="submit" disabled>Guardar Cambios</button>
             </div>
         </form>
     `;
@@ -372,6 +439,34 @@ function mostrarForm(cliente) {
 
     const editForm = contenedorForm.querySelector('#edit-form');
     const btnCancelar = contenedorForm.querySelector('#edit-cancel-btn');
+    const btnSubmit = contenedorForm.querySelector('#edit-submit-btn');
+    const editInputs = editForm.querySelectorAll('input');
+    
+    // Validar todos los inputs al cargar el formulario
+    (async () => {
+        try {
+            for (const input of editInputs) {
+                await validarInput(input, cliente.id);
+            }
+        } catch (error) {
+            console.error('Error en la validación inicial:', error);
+        } finally {
+            activarDesactivarBtn(btnSubmit, editInputs);
+        }
+    })();
+    
+    // Configurar validaciones en blur para el formulario de edición
+    editInputs.forEach(input => {
+        input.addEventListener('blur', async (e) => {
+            try {
+                await validarInput(e.target, cliente.id);
+            } catch (error) {
+                console.error('Error en la validación:', error);
+            } finally {
+                activarDesactivarBtn(btnSubmit, editInputs);
+            }
+        });
+    });
     
     btnCancelar.addEventListener('click', () => {
         ventana.remove();
@@ -383,23 +478,27 @@ function mostrarForm(cliente) {
     });
 }
 
-
+/**
+ * Actualiza los datos de un cliente en IndexedDB y cierra el formulario modal.
+ * @param {Object} cliente - Objeto cliente con el ID del cliente a actualizar
+ * @param {HTMLElement} ventana - Elemento DOM del modal a cerrar tras la actualización
+ */
 function actualizarCliente(cliente, ventana) {
     const nombre = document.querySelector('#edit-name').value.trim();
     const email = document.querySelector('#edit-email').value.trim();
     const phone = document.querySelector('#edit-phone').value.trim();
     
-    const tx = db.transaction("clients", "readwrite");
-    const store = tx.objectStore("clients");
-    store.put({ id: cliente.id, name: nombre, email: email, phone: phone });
+    const transaccion = db.transaction("clients", "readwrite");
+    const storeClientes = transaccion.objectStore("clients");
+    storeClientes.put({ id: cliente.id, name: nombre, email: email, phone: phone });
     
-    tx.oncomplete = () => {
+    transaccion.oncomplete = () => {
         console.log("Cliente actualizado correctamente");
         fetchClients();
         ventana.remove();
     };
     
-    tx.onerror = () => {
+    transaccion.onerror = () => {
         console.error("Error al actualizar el cliente");
     };
 }
