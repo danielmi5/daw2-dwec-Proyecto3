@@ -196,7 +196,7 @@ window.deleteClient = function(id) {
  * Valida que el nombre contenga solo letras y espacios.
  */
 function comprobarNombre(nombre){
-    const regex = /^[a-zA-Z\s]+$/;
+    const regex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
     return regex.test(nombre);
 }
 
@@ -223,7 +223,7 @@ function comprobarEmailYaExiste(email, excluirClienteId = null){
 
         request.onsuccess = () => {
             resolve(request.result.some(cliente => 
-                cliente.email === email && cliente.id !== excluirClienteId
+                cliente.email.toLowerCase() === email.toLowerCase() && cliente.id !== excluirClienteId
             )) 
         }
 
