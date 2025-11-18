@@ -26,8 +26,8 @@ function borrarBaseDatos(){
         storeClientes.clear();
         
         transaccion.oncomplete = () => {
-            const lista = document.querySelector("#client-list");
-            lista.innerHTML = "";
+            const tbody = document.querySelector("#client-table tbody");
+            if (tbody) tbody.innerHTML = "";
 
             console.log("todos los datos borrados");
             borrarDatos = false;
@@ -107,7 +107,6 @@ form.addEventListener('submit', (e) => {
         transaccion.oncomplete = () => {
             console.log("Cliente añadido correctamente");
             fetchClients();
-            form.reset();
             inputs.forEach(input => {
                 input.classList.remove("input-bien", "input-mal");
             });
@@ -130,30 +129,34 @@ function fetchClients() {
     const transaccion = db.transaction("clients", "readonly");
     const storeClientes = transaccion.objectStore("clients");
     const request = storeClientes.getAll();
-    
+
     request.onsuccess = () => {
         const clientes = request.result;
-        const lista = document.querySelector("#client-list");
-        lista.innerHTML = "";
-        
+        const tbody = document.querySelector("#client-table tbody");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
         clientes.forEach(cliente => {
-            const li = document.createElement("li");
-            li.innerHTML = `
-                <div><strong>ID: ${cliente.id}</strong> | Nombre: ${cliente.name} — Email: ${cliente.email} — Teléfono: ${cliente.phone}</div>
-                <div>
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td data-label="ID"><strong>${cliente.id}</strong></td>
+                <td data-label="Nombre">${cliente.name}</td>
+                <td data-label="Email">${cliente.email}</td>
+                <td data-label="Teléfono">${cliente.phone || ''}</td>
+                <td class="actions" data-label="Acciones">
                     <button class="editar-btn">Editar</button>
                     <button class="eliminar-btn">Eliminar</button>
-                </div>
+                </td>
             `;
-            lista.appendChild(li);
-            
-            
-            const editarBtn = li.querySelector(".editar-btn");
+
+            tbody.appendChild(tr);
+
+            const editarBtn = tr.querySelector(".editar-btn");
             editarBtn.addEventListener("click", () => {
                 window.editClient(cliente);
             });
-            
-            const eliminarBtn = li.querySelector(".eliminar-btn");
+
+            const eliminarBtn = tr.querySelector(".eliminar-btn");
             eliminarBtn.addEventListener("click", () => {
                 window.deleteClient(cliente.id);
             });

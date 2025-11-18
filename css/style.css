@@ -1,37 +1,112 @@
-body { 
-    font-family: Arial, sans-serif; 
-    margin: 2em; 
+:root {
+    --color-principal: #005f73; /* azul oscuro */
+    --color-complementario: #ee9b00; /* naranja */
+    --color-input-focus: #f3f3f3; /* azul claro para focus */
+    --color-disabled:rgba(139, 137, 137, 0.1);
+    --color-fondo: #caf0f8;
 }
 
-input, button { 
-    padding: 0.5em; 
-    margin: 0.2em 0; 
-    width: 100%; 
+body {
+    font-family: Arial, sans-serif;
+    margin: 2em;
+    color: var(--color-principal);
+    background-color: var(--color-fondo);
 }
-input:focus { 
-    border-color: blue; 
+
+.form-container{
+    width: 50%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    background-color: #ffffff;
+    border: 1px solid black;
+    padding: 2rem;
+}
+
+.h2-form{
+    width: 100%;
+    margin-top: 0;
+    text-align: center;
+}
+
+
+
+fieldset {
+    width: 100%;
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+input, button {
+    padding: 0.5em;
+    margin: 0.2em 0;
+    width: 100%;
+    border: 1px solid var(--color-principal);
+    background: white;
+    color: var(--color-principal);
+}
+
+input{
+    width: 97%;
+}
+
+input:focus {
+    border-color: var(--color-complementario);
     outline: none;
-    background: #e7f0ff; 
+    background: var(--color-input-focus);
 }
 
-button:disabled { 
-    background: #ccc; 
-    cursor: not-allowed; 
+input:hover {
+    border-color: var(--color-complementario);
 }
-        
-ul { 
-    list-style: none; 
-    padding: 0; }
-        
-li { 
-    padding: 0.5em; 
-    border-bottom: 1px solid #ccc; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; }
-        
-li span { 
-    flex-grow: 1; 
+
+button {
+    border: 1px solid var(--color-principal);
+    background: white;
+    color: var(--color-principal);
+    cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+    background: var(--color-complementario);
+    color: white;
+    transition: 0.5s;
+}
+
+button:focus:not(:disabled) {
+    outline: 2px solid var(--color-complementario);
+    outline-offset: 2px;
+    transition: 0.5s;
+}
+
+button:disabled {
+    background: var(--color-disabled);
+    cursor: not-allowed;
+    color: #666;
+}
+
+#add-btn{
+    width: 25%;
+    align-self: self-end;    
+}
+
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    padding: 0.5em;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+li span {
+    flex-grow: 1;
 }
         
 .actions button { 
@@ -47,6 +122,7 @@ li span {
 #client-form{
     display: flex;
     flex-direction: column;
+    width: 100%;
     gap: 1rem;
 }
 
@@ -93,4 +169,66 @@ li span {
 
 .edit-buttons button {
     flex: 1;
+}
+
+/* Tabla de clientes */
+.table-container{
+    width: 70%;
+    margin-top: 1rem;
+    
+}
+
+#client-table{
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border: 1px solid black;
+    color: var(--color-principal);
+}
+
+#client-table thead th{
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(90deg, var(--color-principal), #2a6f78);
+    color: white;
+    font-weight: 600;
+}
+
+#client-table tbody td{
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.4);
+}
+
+#client-table tbody tr:hover{
+    background: rgba(0,95,115,0.05);
+}
+
+.actions button{
+    margin-left: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+}
+
+
+@media (max-width: 640px){
+    #add-btn{ 
+        width: 100%; 
+    }
+    #client-table thead{ 
+        display: none; 
+    }
+    #client-table tbody td{ 
+        display: block; width: 100%; 
+    }
+    #client-table tbody tr{ 
+        margin-bottom: 0.8rem; 
+        display: block; 
+        border-bottom: 1px solid rgba(0,0,0,0.06); 
+    }
+    #client-table tbody td:before{ 
+        content: attr(data-label); 
+        font-weight: 600; 
+        display: inline-block; 
+        width: 90px; 
+    }
 }
