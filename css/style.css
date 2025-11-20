@@ -209,7 +209,7 @@ li span {
     border-radius: 4px;
 }
 
-/* Search controls */
+/* Buscador */
 .search-container{
     width: 100%;
     display: flex;
@@ -237,6 +237,23 @@ li span {
     border-radius: 4px;
     background: white;
     color: var(--color-principal);
+}
+
+/* Estilos para el botón Exportar */
+
+#export-json-btn{
+    flex: 0;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--color-principal);
+    background: white;
+    color: var(--color-principal);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#export-json-btn:hover{
+    background: var(--color-complementario);
+    color: white;
 }
 
 

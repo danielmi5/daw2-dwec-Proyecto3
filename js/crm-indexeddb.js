@@ -40,7 +40,6 @@ function borrarBaseDatos(){
 
 }
 
-borrarBaseDatos(); 
 const request = indexedDB.open("CRM_Database", 1);
 
 request.onerror = function(event) {
@@ -105,6 +104,7 @@ form.addEventListener("submit", (e) => {
         const storeClientes = transaccion.objectStore("clients");
         storeClientes.add({ name: nombre, email: email, phone: telef});
         transaccion.oncomplete = () => {
+            form.reset()
             console.log("Cliente añadido correctamente");
             fetchClients();
             inputs.forEach(input => {
@@ -220,6 +220,53 @@ function buscarClientes(){
 
 if (entradaBusqueda) entradaBusqueda.addEventListener("input", buscarClientes);
 if (modoBusqueda) modoBusqueda.addEventListener("change", buscarClientes);
+
+// --- EXPORTAR CLIENTES (JSON) 
+/** 
+ * Generar data URL y fuerza la descarga.
+ * Se usa encodeURIComponent para evitar que caracteres especiales rompan la URL.
+ *
+ */
+function descargarJSON(contenido){
+    const dataUrl = "data:application/json;charset=utf-8," + encodeURIComponent(contenido);
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "clientes.json"; // nombre del archivo
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}
+    
+
+/**
+ * Exporta todos los clientes a un archivo JSON y fuerza la descarga usando una data URL.
+ * Utiliza la función descargarJSON()
+ */
+function exportarClientesJSON(){
+    if (!db) {
+        alert("La base de datos no está lista. Inténtalo de nuevo en unos segundos.");
+        return;
+    }
+
+    const transaccion = db.transaction("clients", "readonly");
+    const storeClientes = transaccion.objectStore("clients");
+    const request = storeClientes.getAll();
+
+    request.onsuccess = () => {
+        const clientes = request.result || [];
+        const contenido = JSON.stringify(clientes, null, 2);
+        descargarJSON(contenido);
+    };
+
+    request.onerror = (err) => {
+        console.error("Error obteniendo los clientes para exportar:", err);
+        alert("No se pudo exportar.");
+    };
+}
+
+const botonExportarJSON = document.getElementById("export-json-btn");
+if (botonExportarJSON) botonExportarJSON.addEventListener("click", exportarClientesJSON);
+
 
 // --- EDITAR CLIENTE ---
 /**
