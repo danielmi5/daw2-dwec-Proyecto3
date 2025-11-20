@@ -55,32 +55,32 @@ request.onsuccess = function(event) {
 
 request.onupgradeneeded = function(event) {
     db = event.target.result;
-    if(!db.objectStoreNames.contains('clients')) {
-        const objectStore = db.createObjectStore('clients', { keyPath: 'id', autoIncrement: true });
-        objectStore.createIndex('name', 'name', { unique: false });
-        objectStore.createIndex('email', 'email', { unique: true });
-        objectStore.createIndex('phone', 'phone', { unique: false });
+    if(!db.objectStoreNames.contains("clients")) {
+        const objectStore = db.createObjectStore("clients", { keyPath: "id", autoIncrement: true });
+        objectStore.createIndex("name", "name", { unique: false });
+        objectStore.createIndex("email", "email", { unique: true });
+        objectStore.createIndex("phone", "phone", { unique: false });
     }
 };
 
 
 
 // --- VALIDACIONES ---
-const form = document.getElementById('client-form');
-const addBtn = document.getElementById('add-btn');
-const inputs = form.querySelectorAll('input');
+const form = document.getElementById("client-form");
+const addBtn = document.getElementById("add-btn");
+const inputs = form.querySelectorAll("input");
 let inputNombre = form.querySelector("#name"); 
 let inputEmail = form.querySelector("#email");
 let inputTelefono = form.querySelector("#phone");
 
 // --- Validaciones y activación botón ---
 
-inputs.forEach(input => {
-    input.addEventListener('blur', async (e) => { 
+    inputs.forEach(input => {
+    input.addEventListener("blur", async (e) => { 
         try {
             await inputBien(e.target);
         } catch (err) {
-            console.error('Error en validación:', err);
+            console.error("Error en validación:", err);
         } finally {
             activarDesactivarBtn();
         }
@@ -88,7 +88,7 @@ inputs.forEach(input => {
 });
 
 // --- AGREGAR CLIENTE ---
-form.addEventListener('submit', (e) => {
+form.addEventListener("submit", (e) => {
     e.preventDefault();
     
     if(!db) {
@@ -108,8 +108,8 @@ form.addEventListener('submit', (e) => {
             console.log("Cliente añadido correctamente");
             fetchClients();
             inputs.forEach(input => {
-                input.classList.remove("input-bien", "input-mal");
-            });
+                    input.classList.remove("input-bien", "input-mal");
+                });
             activarDesactivarBtn();
         };
         transaccion.onerror = (event) => {
@@ -132,37 +132,94 @@ function fetchClients() {
 
     request.onsuccess = () => {
         const clientes = request.result;
-        const tbody = document.querySelector("#client-table tbody");
-        if (!tbody) return;
-        tbody.innerHTML = "";
-
-        clientes.forEach(cliente => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td data-label="ID"><strong>${cliente.id}</strong></td>
-                <td data-label="Nombre">${cliente.name}</td>
-                <td data-label="Email">${cliente.email}</td>
-                <td data-label="Teléfono">${cliente.phone || ''}</td>
-                <td class="actions" data-label="Acciones">
-                    <button class="editar-btn">Editar</button>
-                    <button class="eliminar-btn">Eliminar</button>
-                </td>
-            `;
-
-            tbody.appendChild(tr);
-
-            const editarBtn = tr.querySelector(".editar-btn");
-            editarBtn.addEventListener("click", () => {
-                window.editClient(cliente);
-            });
-
-            const eliminarBtn = tr.querySelector(".eliminar-btn");
-            eliminarBtn.addEventListener("click", () => {
-                window.deleteClient(cliente.id);
-            });
-        });
+        // cache de clientes para búsquedas/filtrado
+        clientesCache = clientes;
+        renderizarClientes(clientes);
     };
 }
+
+// Caché de clientes para evitar lecturas repetidas
+let clientesCache = [];
+
+/**
+ * Renderiza una lista de clientes en el cuerpo de la tabla.
+ * @param {Array} clientes
+ */
+function renderizarClientes(clientes){
+    const tbody = document.querySelector("#client-table tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    clientes.forEach(cliente => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td data-label="ID"><strong>${cliente.id}</strong></td>
+            <td data-label="Nombre">${cliente.name}</td>
+            <td data-label="Email">${cliente.email}</td>
+            <td data-label="Teléfono">${cliente.phone || ""}</td>
+            <td class="actions" data-label="Acciones">
+                <button class="editar-btn">Editar</button>
+                <button class="eliminar-btn">Eliminar</button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+
+        const editarBtn = tr.querySelector(".editar-btn");
+        if (editarBtn) editarBtn.addEventListener("click", () => window.editClient(cliente));
+
+        const eliminarBtn = tr.querySelector(".eliminar-btn");
+        if (eliminarBtn) eliminarBtn.addEventListener("click", () => window.deleteClient(cliente.id));
+    });
+}
+
+// --- BUSCADOR DE CLIENTES 
+
+const entradaBusqueda = document.getElementById("search-input");
+const modoBusqueda = document.getElementById("search-mode");
+
+/**
+ * Busca los clientes según lo introducido en el buscador (entradaBusqueda)
+ */
+function buscarClientes(){
+    if (!clientesCache || clientesCache.length === 0) {
+        fetchClients();
+        return;
+    }
+
+    const consulta = (entradaBusqueda && entradaBusqueda.value) ? entradaBusqueda.value.trim().toLowerCase() : "";
+    const modo = (modoBusqueda && modoBusqueda.value) ? modoBusqueda.value : "cualquiera";
+
+    let resultados = clientesCache.filter(cliente => {
+        if (modo === "cualquiera") {
+            if (consulta === "") return true;
+            return (String(cliente.id) === consulta) || (cliente.name && cliente.name.toLowerCase().includes(consulta)) || (cliente.email && cliente.email.toLowerCase().includes(consulta)) || ((cliente.phone || "").includes(consulta));
+        }
+        if (modo === "id") {
+            if (consulta === "") return true;
+            const num = parseInt(consulta, 10);
+            return !isNaN(num) && cliente.id === num;
+        }
+        if (modo === "nombre") {
+            if (consulta === "") return true;
+            return (cliente.name || "").toLowerCase().includes(consulta);
+        }
+        if (modo === "phone") {
+            if (consulta === "") return true;
+            return (cliente.phone || "").includes(consulta);
+        }
+        if (modo === "email") {
+            if (consulta === "") return true;
+            return (cliente.email || "").toLowerCase().includes(consulta);
+        }
+        return false;
+    });
+
+    renderizarClientes(resultados);
+}
+
+if (entradaBusqueda) entradaBusqueda.addEventListener("input", buscarClientes);
+if (modoBusqueda) modoBusqueda.addEventListener("change", buscarClientes);
 
 // --- EDITAR CLIENTE ---
 /**
@@ -287,7 +344,7 @@ function generarErrorInput(input, mensaje){
     p.classList.add("mensaje-error");
 
     input.classList.add("input-mal");
-    input.insertAdjacentElement('afterend', p);
+    input.insertAdjacentElement("afterend", p);
 }
 
 /**
@@ -313,7 +370,7 @@ async function validarInput(inputElement, clienteId = null) {
     const inputId = inputElement.id;
     
     // Validación de nombre
-    if (inputId === 'name' || inputId === 'edit-name') {
+    if (inputId === "name" || inputId === "edit-name") {
         if (!comprobarNombre(valor)) {
             const msj = "Nombre no válido";
             generarErrorInput(inputElement, msj);
@@ -323,7 +380,7 @@ async function validarInput(inputElement, clienteId = null) {
     }
     
     // Validación de email
-    if (inputId === 'email' || inputId === 'edit-email') {
+    if (inputId === "email" || inputId === "edit-email") {
         if (!comprobarEmail(valor)) {
             const msj = "Email no válido";
             generarErrorInput(inputElement, msj);
@@ -337,7 +394,7 @@ async function validarInput(inputElement, clienteId = null) {
                     bien = false;
                 }
             } catch (err) {
-                console.error('Error comprobando email:', err);
+                console.error("Error comprobando email:", err);
                 generarErrorInput(inputElement, "No se pudo verificar el email");
                 bien = false;
             }
@@ -345,7 +402,7 @@ async function validarInput(inputElement, clienteId = null) {
     }
     
     // Validación de teléfono
-    if (inputId === 'phone' || inputId === 'edit-phone') {
+    if (inputId === "phone" || inputId === "edit-phone") {
         if (!comprobarTelefono(valor)) {
             const msj = "El número de teléfono no es válido";
             generarErrorInput(inputElement, msj);
@@ -359,7 +416,7 @@ async function validarInput(inputElement, clienteId = null) {
                     bien = false;
                 }
             } catch (err) {
-                console.error('Error comprobando teléfono:', err);
+                console.error("Error comprobando teléfono:", err);
                 generarErrorInput(inputElement, "No se pudo verificar el teléfono");
                 bien = false;
             }
@@ -384,7 +441,7 @@ async function inputBien(input){
 
 /**
  * Habilita o deshabilita un botón según el estado de validación de los inputs.
- * El botón se habilita solo si todos los inputs tienen la clase 'input-bien' y no están vacíos.
+ * El botón se habilita solo si todos los inputs tienen la clase "input-bien" y no están vacíos.
  * @param {HTMLButtonElement} boton - Botón a activar/desactivar (por defecto addBtn)
  * @param {NodeList} inputsArray - Lista de inputs a verificar (por defecto inputs del form principal)
  */
@@ -406,11 +463,11 @@ function activarDesactivarBtn(boton = addBtn, inputsArray = inputs){
  * @param {Object} cliente - Objeto cliente con propiedades id, name, email y phone
  */
 function mostrarForm(cliente) {
-    const ventana = document.createElement('div');
-    ventana.className = 'edit-ventana';
+    const ventana = document.createElement("div");
+    ventana.className = "edit-ventana";
     
-    const contenedorForm = document.createElement('div');
-    contenedorForm.className = 'edit-contenedor';
+    const contenedorForm = document.createElement("div");
+    contenedorForm.className = "edit-contenedor";
 
     const formularioHTML = `
         <h2>Editar Cliente</h2>
@@ -440,10 +497,10 @@ function mostrarForm(cliente) {
     ventana.appendChild(contenedorForm);
     document.body.appendChild(ventana);
 
-    const editForm = contenedorForm.querySelector('#edit-form');
-    const btnCancelar = contenedorForm.querySelector('#edit-cancel-btn');
-    const btnSubmit = contenedorForm.querySelector('#edit-submit-btn');
-    const editInputs = editForm.querySelectorAll('input');
+    const editForm = contenedorForm.querySelector("#edit-form");
+    const btnCancelar = contenedorForm.querySelector("#edit-cancel-btn");
+    const btnSubmit = contenedorForm.querySelector("#edit-submit-btn");
+    const editInputs = editForm.querySelectorAll("input");
     
     // Validar todos los inputs al cargar el formulario
     (async () => {
@@ -452,7 +509,7 @@ function mostrarForm(cliente) {
                 await validarInput(input, cliente.id);
             }
         } catch (error) {
-            console.error('Error en la validación inicial:', error);
+            console.error("Error en la validación inicial:", error);
         } finally {
             activarDesactivarBtn(btnSubmit, editInputs);
         }
@@ -460,22 +517,22 @@ function mostrarForm(cliente) {
     
     // Configurar validaciones en blur para el formulario de edición
     editInputs.forEach(input => {
-        input.addEventListener('blur', async (e) => {
+        input.addEventListener("blur", async (e) => {
             try {
                 await validarInput(e.target, cliente.id);
             } catch (error) {
-                console.error('Error en la validación:', error);
+                console.error("Error en la validación:", error);
             } finally {
                 activarDesactivarBtn(btnSubmit, editInputs);
             }
         });
     });
     
-    btnCancelar.addEventListener('click', () => {
+    btnCancelar.addEventListener("click", () => {
         ventana.remove();
     });
 
-    editForm.addEventListener('submit', (e) => {
+    editForm.addEventListener("submit", (e) => {
         e.preventDefault();
         actualizarCliente(cliente, ventana);
     });
@@ -487,9 +544,9 @@ function mostrarForm(cliente) {
  * @param {HTMLElement} ventana - Elemento DOM del modal a cerrar tras la actualización
  */
 function actualizarCliente(cliente, ventana) {
-    const nombre = document.querySelector('#edit-name').value.trim();
-    const email = document.querySelector('#edit-email').value.trim();
-    const phone = document.querySelector('#edit-phone').value.trim();
+    const nombre = document.querySelector("#edit-name").value.trim();
+    const email = document.querySelector("#edit-email").value.trim();
+    const phone = document.querySelector("#edit-phone").value.trim();
     
     const transaccion = db.transaction("clients", "readwrite");
     const storeClientes = transaccion.objectStore("clients");

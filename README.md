@@ -24,3 +24,10 @@ Estilos y responsividad en el css:
 - Variables CSS para la paleta de colores se reutilizan en la tabla, botones, fondos, etc.
 - En pantallas pequeñas se reducen elementos para mejorar la legibilidad.
 
+
+### Nueva funcionalidad: Buscador de clientes
+
+Se ha añadido un buscador para los clientes.
+
+### Nueva funcionalidad:
+
