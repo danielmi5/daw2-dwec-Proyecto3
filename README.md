@@ -36,7 +36,7 @@ Se ha implementado un buscador para la tabla de clientes que permite filtrar res
 - Los resultados se muestran inmediatamente en la tabla mediante la función `renderizarClientes()`.
 
 Función principal `buscarClientes()`: filtra los clientes por caché según el modo seleccionado y el input introducido en el buscador del usuario:
-
+https://github.com/danielmi5/daw2-dwec-Proyecto3/blob/4481cac9bbfd4c4b36a1dd86a89e8f78329e7978/js/crm-indexeddb.js#L176-L222
 
 Funcionalidades del buscador:
 - Filtrado de los clientes usando caché: se optó por llamar `getAll()` una vez y filtrar la lista en memoria porque es la solución más simple y rápida para datasets. Permite búsquedas instantáneas.
@@ -50,7 +50,10 @@ Se añadió una funcionalidad para exportar todos los clientes almacenados en In
 
 Funciones principales:
 - `descargarJSON(contenido)` — función auxiliar que genera una data URL a partir del JSON proporcionado y fuerza la descarga creando un enlace temporal (`<a>`) y simulando un click.
+https://github.com/danielmi5/daw2-dwec-Proyecto3/blob/4481cac9bbfd4c4b36a1dd86a89e8f78329e7978/js/crm-indexeddb.js#L225-L238
+
 - `exportarClientesJSON()` — función que lee todos los clientes desde IndexedDB (`store.getAll()`), convierte el resultado a JSON y llama a `descargarJSON()` para iniciar la descarga.
+https://github.com/danielmi5/daw2-dwec-Proyecto3/blob/4481cac9bbfd4c4b36a1dd86a89e8f78329e7978/js/crm-indexeddb.js#L241-L265
 
 Funcionalidades:
 - Lectura desde IndexedDB: `exportarClientesJSON()` abre una transacción `readonly` sobre el object store `clients` y obtiene todos los registros con `getAll()`.
